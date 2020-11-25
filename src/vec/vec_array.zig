@@ -17,9 +17,7 @@ pub fn VecArray(comptime T: type, comptime n: usize) type {
         }
 
         pub fn setFromArray(self: *Self, array: [n]T) void {
-            for (self.data) |*value, i| {
-                value.* = array[i];
-            }
+            mem.copy(T, self.data[0..], array[0..]);
         }
 
         pub fn setFromSlice(self: *Self, slice: []T) void {

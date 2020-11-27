@@ -37,11 +37,19 @@ pub fn MatArray(comptime T: type, comptime n: usize, comptime m: usize) type {
             }
         }
 
-        //pub fn fromVecArray(vec: Self) Self {
-        //return Self{
-        //.data = vec.data,
-        //};
-        //}
+        pub fn fromMat(self: *Self, mat: anytype) void {
+            const MatT = @TypeOf(mat);
+            if (@typeInfo(MatT) != .Struct) @compileError("Expected Vec, found '" ++ @typeName(MatT) ++ "'");
+            if (!@hasDecl(MatT, "DataT")) @compileError("Mat does not contain DataT declaration");
+            if (!@hasField(MatT, "data")) @compileError("Mat does not contain data field");
+            if (!@hasField(MatT, "row_len")) @compileError("Mat does not contain row_len field");
+            if (!@hasField(MatT, "col_len")) @compileError("Mat does not contain col_len field");
+            if (MatT.DataT != T) @compileError("Expected Mat of data type '" ++ @typeName(T) ++ "', found '" ++ @typeName(MatT) ++ "'");
+
+            return Self{
+                .data = vec.data,
+            };
+        }
     };
 }
 
@@ -91,7 +99,7 @@ test "VecArray setFromArrayOfArrays" {
     }, n.data);
 }
 
-test "VecArray setFromSliceOfArrays" {
+test "MatArray setFromSliceOfArrays" {
     var slice_of_arrays_1 = try testing.allocator.alloc([3]u8, 3);
     defer testing.allocator.free(slice_of_arrays_1);
     slice_of_arrays_1[0] = [3]u8{ 1, 2, 3 };
@@ -136,7 +144,7 @@ test "VecArray setFromSliceOfArrays" {
     }, n.data);
 }
 
-test "VecArray setFromSliceOfSlices" {
+test "MatArray setFromSliceOfSlices" {
     var slice_of_slices_1 = try testing.allocator.alloc([]u8, 3);
     defer testing.allocator.free(slice_of_slices_1);
     var array_1 = [3]u8{ 1, 2, 3 };
@@ -154,34 +162,40 @@ test "VecArray setFromSliceOfSlices" {
         .{ 7, 8, 9 },
     }, m.data);
 
-    //var slice_of_arrays_2 = try testing.allocator.alloc([3]u8, 3);
-    //slice_of_arrays_2[0] = [3]u8{ 9, 8, 7 };
-    //slice_of_arrays_2[1] = [3]u8{ 6, 5, 4 };
-    //slice_of_arrays_2[2] = [3]u8{ 3, 2, 1 };
+    var slice_of_slices_2 = try testing.allocator.alloc([]u8, 3);
+    var array_4 = [3]u8{ 9, 8, 7 };
+    var array_5 = [3]u8{ 6, 5, 4 };
+    var array_6 = [3]u8{ 3, 2, 1 };
+    slice_of_slices_2[0] = array_4[0..];
+    slice_of_slices_2[1] = array_5[0..];
+    slice_of_slices_2[2] = array_6[0..];
 
-    //var n = MatArray(u8, 3, 3).new();
-    //n.setFromSliceOfArrays(slice_of_arrays_2);
-    //testing.expectEqual([3][3]u8{
-    //.{ 9, 8, 7 },
-    //.{ 6, 5, 4 },
-    //.{ 3, 2, 1 },
-    //}, n.data);
+    var n = MatArray(u8, 3, 3).new();
+    n.setFromSliceOfSlices(slice_of_slices_2);
+    testing.expectEqual([3][3]u8{
+        .{ 9, 8, 7 },
+        .{ 6, 5, 4 },
+        .{ 3, 2, 1 },
+    }, n.data);
 
-    //slice_of_arrays_2[0] = [3]u8{ 1, 2, 3 };
-    //slice_of_arrays_2[1] = [3]u8{ 4, 5, 6 };
-    //slice_of_arrays_2[2] = [3]u8{ 7, 8, 9 };
-    //testing.expectEqual([3][3]u8{
-    //.{ 9, 8, 7 },
-    //.{ 6, 5, 4 },
-    //.{ 3, 2, 1 },
-    //}, n.data);
+    array_4 = [3]u8{ 1, 2, 3 };
+    array_5 = [3]u8{ 4, 5, 6 };
+    array_6 = [3]u8{ 7, 8, 9 };
+    slice_of_slices_2[0] = array_4[0..];
+    slice_of_slices_2[1] = array_5[0..];
+    slice_of_slices_2[2] = array_6[0..];
+    testing.expectEqual([3][3]u8{
+        .{ 9, 8, 7 },
+        .{ 6, 5, 4 },
+        .{ 3, 2, 1 },
+    }, n.data);
 
-    //testing.allocator.free(slice_of_arrays_2);
-    //testing.expectEqual([3][3]u8{
-    //.{ 9, 8, 7 },
-    //.{ 6, 5, 4 },
-    //.{ 3, 2, 1 },
-    //}, n.data);
+    testing.allocator.free(slice_of_slices_2);
+    testing.expectEqual([3][3]u8{
+        .{ 9, 8, 7 },
+        .{ 6, 5, 4 },
+        .{ 3, 2, 1 },
+    }, n.data);
 }
 
 //test "VecArray fromVecArray" {
